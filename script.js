@@ -1,123 +1,105 @@
-const isValid = (puzzle, row, column, number) => {
-    // Check if the cell is already filled
-    if (puzzle[row][column] != 0) {
-        return false;
+class Puzzle {
+    constructor(puzzle, gridElement) {
+        this.puzzle = puzzle;
+        this.gridElement = gridElement;
+        this.initializeGrid();
     }
 
-    // Check the row and column for the number
-    for (let i = 0; i < 9; i++) {
-        if (puzzle[row][i] == number || puzzle[i][column] == number) {
+    isSolveable() {
+        // Deep copy puzzle to check if it is solveable
+        const puzzleCopy = JSON.parse(JSON.stringify(this.puzzle));
+        const result = this.solve(0, 0);
+        this.puzzle = puzzleCopy;
+        return result;
+    }
+
+    isValid(row, column, number) {
+        // Check if the cell is already filled
+        if (this.puzzle[row][column] != 0) {
             return false;
         }
-    }
 
-    // Top left cell of the 3x3 subgrid
-    const subGridRow = Math.floor(row / 3) * 3;
-    const subGridCol = Math.floor(column / 3) * 3;
-
-    // Check the subgrid for the number
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            if (puzzle[subGridRow + i][subGridCol + j] == number) {
+        // Check the row and column for the number
+        for (let i = 0; i < 9; i++) {
+            if (this.puzzle[row][i] == number || this.puzzle[i][column] == number) {
                 return false;
             }
         }
-    }
 
-    return true;
-};
+        // Top left cell of the 3x3 subgrid
+        const subGridRow = Math.floor(row / 3) * 3;
+        const subGridCol = Math.floor(column / 3) * 3;
 
-let numbersAttempted = 0;
-const solve = async (puzzle, row, column) => {
-    // The puzzle has been solved
-    if (row == 9) {
-        return true;
-    }
-
-    // Go down a row
-    if (column == 9) {
-        return await solve(puzzle, row + 1, 0);
-    }
-
-    // Cell is not empty
-    if (puzzle[row][column] != 0) {
-        return await solve(puzzle, row, column + 1);
-    }
-
-    // Recursively solve the puzzle
-    for (let number = 1; number <= 9; number++) {
-        if (isValid(puzzle, row, column, number)) {
-            numbersAttempted++;
-            puzzle[row][column] = number;
-            await new Promise((resolve) => setTimeout(resolve, 5));
-            update();
-
-            if (await solve(puzzle, row, column + 1)) {
-                return true;
+        // Check the subgrid for the number
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (this.puzzle[subGridRow + i][subGridCol + j] == number) {
+                    return false;
+                }
             }
-
-            // Backtrack
-            puzzle[row][column] = 0;
-            await new Promise((resolve) => setTimeout(resolve, 5));
-            update();
         }
-    }
 
-    return false;
-};
+        return true;
+    };
 
-const gridElement = document
-    .getElementById("sudoku-grid")
-    .getElementsByTagName("tbody")[0];
-
-const initializeGrid = () => {
-    let html = "";
-    for (let row = 0; row < 9; row++) {
-        html += "<tr>";
-        for (let col = 0; col < 9; col++) {
-            const value = puzzle[row][col];
-            const preFilledClass = value !== 0 ? 'pre-filled' : '';
-            html += `<td id="cell-${row}-${col}" class="${preFilledClass}">${value || ""}</td>`;
+    solve(row, column) {
+        // The puzzle has been solved
+        if (row == 9) {
+            return true;
         }
-        html += "</tr>";
-    }
-    gridElement.innerHTML = html;
-};
 
-const update = () => {
-    const numbersElement = document.getElementById("numbers");
-    numbersElement.innerText = numbersAttempted;
-
-    for (let row = 0; row < 9; row++) {
-        for (let column = 0; column < 9; column++) {
-            const cellElemenet = document.getElementById(`cell-${row}-${column}`);
-
-            // Leave cell blank if 0
-            cellElemenet.innerText = puzzle[row][column] === 0 ? "" : puzzle[row][column];
+        // Go down a row
+        if (column == 9) {
+            return this.solve(row + 1, 0);
         }
-    }
-};
 
-let timerInterval;
-let elapsedTime = 0;
+        // Cell is not empty
+        if (this.puzzle[row][column] != 0) {
+            return this.solve(row, column + 1);
+        }
 
-const startTimer = () => {
-    const startTime = Date.now() - elapsedTime;
-    timerInterval = setInterval(() => {
-        elapsedTime = Date.now() - startTime;
-        document.getElementById("timer").innerText = formatTime(elapsedTime);
-    }, 1000);
-};
+        // Recursively solve the puzzle
+        for (let number = 1; number <= 9; number++) {
+            if (this.isValid(row, column, number)) {
+                this.puzzle[row][column] = number;
 
-const stopTimer = () => {
-    clearInterval(timerInterval);
-};
+                if (this.solve(row, column + 1)) {
+                    return true;
+                }
 
-const formatTime = (time) => {
-    const seconds = Math.floor(time / 1000) % 60;
-    const minutes = Math.floor(time / 60000) % 60;
-    return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-};
+                // Backtrack
+                this.puzzle[row][column] = 0;
+            }
+        }
+
+        return false;
+    };
+
+    initializeGrid() {
+        let html = "";
+        for (let row = 0; row < 9; row++) {
+            html += "<tr>";
+            for (let col = 0; col < 9; col++) {
+                const value = this.puzzle[row][col];
+                const preFilledClass = value !== 0 ? 'pre-filled' : '';
+                html += `<td id="cell-${row}-${col}" class="${preFilledClass}">${value || ""}</td>`;
+            }
+            html += "</tr>";
+        }
+        this.gridElement.innerHTML = html;
+    };
+
+    update() {
+        for (let row = 0; row < 9; row++) {
+            for (let column = 0; column < 9; column++) {
+                const cellElement = document.getElementById(`cell-${row}-${column}`);
+
+                // Leave cell blank if 0
+                cellElement.innerText = this.puzzle[row][column] === 0 ? "" : this.puzzle[row][column];
+            }
+        }
+    };
+}
 
 const easyPuzzle = [
     [0, 6, 0, 4, 8, 0, 2, 0, 5],
@@ -155,12 +137,14 @@ const hardPuzzle = [
     [9, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
-const puzzle = mediumPuzzle;
 
-initializeGrid();
-const solvePuzzle = async () => {
-    startTimer();
-    const result = await solve(puzzle, 0, 0);
-    stopTimer();
-    return result;
+const gridElement = document
+    .getElementById("sudoku-grid")
+    .getElementsByTagName("tbody")[0];
+
+const puzzle = new Puzzle(hardPuzzle, gridElement);
+
+const solvePuzzle = () => {
+    puzzle.solve(0, 0);
+    puzzle.update();
 };
