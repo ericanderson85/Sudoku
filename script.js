@@ -24,6 +24,18 @@ const mediumPuzzle = [
     [0, 0, 0, 0, 0, 0, 0, 6, 0]
 ];
 
+// const hardPuzzle = [
+//     [0, 0, 0, 0, 1, 0, 0, 3, 0],
+//     [0, 0, 9, 0, 0, 5, 0, 0, 8],
+//     [8, 0, 4, 0, 0, 6, 0, 2, 5],
+//     [0, 0, 0, 0, 0, 0, 6, 0, 0],
+//     [0, 0, 8, 0, 0, 4, 0, 0, 0],
+//     [1, 2, 0, 0, 8, 7, 0, 0, 0],
+//     [3, 0, 0, 9, 0, 0, 2, 0, 0],
+//     [0, 6, 5, 0, 0, 8, 0, 0, 0],
+//     [9, 0, 0, 0, 0, 0, 0, 0, 0]
+// ];
+
 const hardPuzzle = [
     [0, 0, 0, 0, 1, 0, 0, 3, 0],
     [0, 0, 9, 0, 0, 5, 0, 0, 8],
@@ -34,14 +46,14 @@ const hardPuzzle = [
     [3, 0, 0, 9, 0, 0, 2, 0, 0],
     [0, 6, 5, 0, 0, 8, 0, 0, 0],
     [9, 0, 0, 0, 0, 0, 0, 0, 0]
-];
+]
 
 
 const gridElement = document
     .getElementById("sudoku-grid")
     .getElementsByTagName("tbody")[0];
 
-const puzzle = new Puzzle(hardPuzzle, gridElement);
+const puzzle = new Puzzle(mediumPuzzle, gridElement);
 
 document.addEventListener('DOMContentLoaded', () => {
     const solveButton = document.querySelector('.solve-button');

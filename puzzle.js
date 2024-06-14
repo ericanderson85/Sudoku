@@ -10,7 +10,7 @@ export default class Puzzle {
             }
             this.puzzle.push(cells);
         }
-        this.updateNakedCandidates();
+        this.updateCandidates();
         this.gridElement = gridElement;
         this.initializeGrid();
     }
@@ -96,7 +96,7 @@ export default class Puzzle {
     //     this.updateNakedCandidates();
     // }
 
-    updateNakedCandidates() {
+    updateCandidates() {
         for (let row = 0; row < 9; row++) {
             for (let column = 0; column < 9; column++) {
                 const cell = this.puzzle[row][column];
@@ -190,35 +190,32 @@ export default class Puzzle {
 
     useBasicTechniques() {
         let changeCount = 0;
-        let changesMade;
 
-        do {
-            changesMade = false;
+        const nakedSingles = this.nakedSingles();
+        if (nakedSingles.length !== 0) {
 
-            const nakedSingles = this.nakedSingles();
-            if (nakedSingles.length !== 0) {
-                changesMade = true;
+            nakedSingles.forEach(nakedSingle => {
+                nakedSingle.cell.setNumber(nakedSingle.number);
+                changeCount++;
+            });
+            this.updateCandidates();
+        }
 
-                nakedSingles.forEach(nakedSingle => {
-                    nakedSingle.cell.setNumber(nakedSingle.number);
-                    changeCount++;
-                });
-                this.updateNakedCandidates();
-            }
+        const nakedCount = changeCount;
 
+        const hiddenSingles = this.hiddenSingles();
+        if (hiddenSingles.length !== 0) {
 
-            const hiddenSingles = this.hiddenSingles();
-            if (hiddenSingles.length !== 0) {
-                changesMade = true;
+            hiddenSingles.forEach(hiddenSingle => {
+                hiddenSingle.cell.setNumber(hiddenSingle.number);
+                changeCount++;
+            });
+            this.updateCandidates();
+        }
 
-                hiddenSingles.forEach(hiddenSingle => {
-                    hiddenSingle.cell.setNumber(hiddenSingle.number);
-                    changeCount++;
-                });
-                this.updateNakedCandidates();
-            }
+        const hiddenCount = changeCount - nakedCount;
 
-        } while (changesMade);
+        console.log(`naked: ${nakedCount}, hidden: ${hiddenCount}`);
 
         return changeCount;
     }
@@ -335,6 +332,73 @@ export default class Puzzle {
         return groups + pointing;
     }
 
+    xWing() {
+        let removedCandidateCount = 0;
+
+        const xWingUnit = (isRow) => {
+            const candidatePositions = new Map();
+
+            for (let index = 0; index < 9; index++) {
+                const cells = isRow ? this.getRow(index) : this.getColumn(index);
+                let candidatesMap = new Map();
+
+                cells.forEach(cell => {
+                    const candidates = cell.getCandidates();
+                    candidates.forEach(candidate => {
+                        if (!candidatesMap.has(candidate)) {
+                            candidatesMap.set(candidate, []);
+                        }
+                        candidatesMap.get(candidate).push(isRow ? cell.column : cell.row);
+                    });
+                });
+
+                candidatesMap.forEach((positions, candidate) => {
+                    if (positions.length !== 2) {
+                        return;
+                    }
+
+                    const key = candidate + ':' + positions.sort().join(',');
+                    if (!candidatePositions.has(key)) {
+                        candidatePositions.set(key, []);
+                    }
+                    candidatePositions.get(key).push(index);
+                });
+            }
+
+            candidatePositions.forEach((indices, key) => {
+                if (indices.length !== 2) {
+                    return;
+                }
+
+                const parts = key.split(':');
+                const candidate = parseInt(parts[0]);
+                const positions = parts[1].split(',').map(Number);
+
+                positions.forEach(position => {
+                    for (let index = 0; index < 9; index++) {
+                        if (!indices.includes(index)) {
+                            const cell = isRow ? this.puzzle[index][position] : this.puzzle[position][index];
+                            if (cell.removeCandidate(candidate)) {
+                                removedCandidateCount++;
+                            }
+                        }
+                    }
+                });
+            });
+        };
+
+        xWingUnit(true);
+        xWingUnit(false);
+
+        return removedCandidateCount;
+    }
+
+    useAdvancedTechniques() {
+        const xWing = this.xWing();
+        console.log(`xWing: ${xWing}`);
+        return xWing;
+    }
+
     isSolved() {
         for (let row = 0; row < 9; row++) {
             for (let column = 0; column < 9; column++) {
@@ -349,7 +413,7 @@ export default class Puzzle {
     solve() {
         let changesMade;
         do {
-            changesMade = this.useBasicTechniques() > 0 || this.useIntermediateTechniques() > 0;
+            changesMade = this.useBasicTechniques() > 0 || this.useIntermediateTechniques() > 0 || this.useAdvancedTechniques() > 0;
         } while (changesMade);
 
         if (this.isSolved()) {
